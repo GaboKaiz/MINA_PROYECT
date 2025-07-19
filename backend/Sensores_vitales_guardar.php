@@ -1,6 +1,17 @@
 <?php
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json; charset=UTF-8");
-require_once 'Conexion.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit();
+}
+
+require_once(__DIR__ . '/Conexion.php');
+
 
 class SensoresVitales
 {
@@ -14,10 +25,8 @@ class SensoresVitales
 
     public function guardarDatos()
     {
-        // Obtener datos del cuerpo de la solicitud
         $input = json_decode(file_get_contents('php://input'), true);
 
-        // Validar que se recibieron todos los campos necesarios
         $required_fields = ['dioxido_nitrogeno', 'temperatura', 'humedad', 'pulso', 'x', 'y', 'z', 'gx', 'gy', 'gz', 'id_equipo'];
         foreach ($required_fields as $field) {
             if (!isset($input[$field])) {
@@ -27,51 +36,56 @@ class SensoresVitales
             }
         }
 
-        // Extraer datos
-        $dioxido_nitrogeno = $input['dioxido_nitrogeno'];
-        $temperatura = $input['temperatura'];
-        $humedad = $input['humedad'];
-        $pulso = $input['pulso'];
-        $x = $input['x'];
-        $y = $input['y'];
-        $z = $input['z'];
-        $gx = $input['gx'];
-        $gy = $input['gy'];
-        $gz = $input['gz'];
-        $id_equipo = $input['id_equipo'];
+        // Extraer y limpiar los datos
+        $dioxido_nitrogeno = (float)$input['dioxido_nitrogeno'];
+        $temperatura = (float)$input['temperatura'];
+        $humedad = (float)$input['humedad'];
+        $pulso = (int)$input['pulso'];
+        $x = (float)$input['x'];
+        $y = (float)$input['y'];
+        $z = (float)$input['z'];
+        $gx = (float)$input['gx'];
+        $gy = (float)$input['gy'];
+        $gz = (float)$input['gz'];
+        $id_equipo = (int)$input['id_equipo'];
 
         try {
-            // Preparar la consulta SQL
-            $sql = "INSERT INTO sensores_vitales (dioxido_nitrogeno, temperatura, humedad, pulso, x, y, z, gx, gy, gz, id_equipo, fecha_hora)
-                    VALUES (:dioxido_nitrogeno, :temperatura, :humedad, :pulso, :x, :y, :z, :gx, :gy, :gz, :id_equipo, NOW())";
+            $sql = "INSERT INTO sensores_vitales (
+                        dioxido_nitrogeno, temperatura, humedad, pulso,
+                        x, y, z, gx, gy, gz, id_equipo, fecha_hora
+                    ) VALUES (
+                        :dioxido_nitrogeno, :temperatura, :humedad, :pulso,
+                        :x, :y, :z, :gx, :gy, :gz, :id_equipo, NOW()
+                    )";
+
             $stmt = $this->conexion->prepare($sql);
 
-            // Vincular parámetros
-            $stmt->bindParam(':dioxido_nitrogeno', $dioxido_nitrogeno, PDO::PARAM_STR);
-            $stmt->bindParam(':temperatura', $temperatura, PDO::PARAM_STR);
-            $stmt->bindParam(':humedad', $humedad, PDO::PARAM_STR);
-            $stmt->bindParam(':pulso', $pulso, PDO::PARAM_INT);
-            $stmt->bindParam(':x', $x, PDO::PARAM_STR);
-            $stmt->bindParam(':y', $y, PDO::PARAM_STR);
-            $stmt->bindParam(':z', $z, PDO::PARAM_STR);
-            $stmt->bindParam(':gx', $gx, PDO::PARAM_STR);
-            $stmt->bindParam(':gy', $gy, PDO::PARAM_STR);
-            $stmt->bindParam(':gz', $gz, PDO::PARAM_STR);
-            $stmt->bindParam(':id_equipo', $id_equipo, PDO::PARAM_INT);
+            $stmt->bindParam(':dioxido_nitrogeno', $dioxido_nitrogeno);
+            $stmt->bindParam(':temperatura', $temperatura);
+            $stmt->bindParam(':humedad', $humedad);
+            $stmt->bindParam(':pulso', $pulso);
+            $stmt->bindParam(':x', $x);
+            $stmt->bindParam(':y', $y);
+            $stmt->bindParam(':z', $z);
+            $stmt->bindParam(':gx', $gx);
+            $stmt->bindParam(':gy', $gy);
+            $stmt->bindParam(':gz', $gz);
+            $stmt->bindParam(':id_equipo', $id_equipo);
 
-            // Ejecutar la consulta
             $stmt->execute();
 
             http_response_code(201);
             echo json_encode(["message" => "Datos guardados correctamente"]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(["error" => "Error al guardar los datos: " . $e->getMessage()]);
+            // En producción evita exponer mensajes de error internos
+            // echo json_encode(["error" => "Error al guardar los datos: " . $e->getMessage()]);
+            echo json_encode(["error" => "Error al guardar los datos"]);
+            error_log("Error al guardar sensores: " . $e->getMessage());
         }
     }
 }
 
-// Procesar la solicitud
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $api = new SensoresVitales();
     $api->guardarDatos();
@@ -79,4 +93,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     http_response_code(405);
     echo json_encode(["error" => "Método no permitido, use POST"]);
 }
-?>

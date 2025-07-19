@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Profile from '../components/Profile';
@@ -6,27 +6,11 @@ import TeamReport from '../components/TeamReport';
 import DataReport from '../components/DataReport';
 import GraphReport from '../components/GraphReport';
 import MovementReport from '../components/MovementReport';
-import { checkSession, logout } from '../services/api';
+import { logout } from '../services/api';
 
 function Dashboard() {
     const [activeSection, setActiveSection] = useState('profile');
     const navigate = useNavigate();
-
-    useEffect(() => {
-        const verifySession = async () => {
-            try {
-                const response = await checkSession();
-                if (response.data.estado !== 'ok') {
-                    alert('Por favor, inicia sesión');
-                    navigate('/login');
-                }
-            } catch (error) {
-                alert('Error de conexión: ' + error.message);
-                navigate('/login');
-            }
-        };
-        verifySession();
-    }, [navigate]);
 
     const handleLogout = async () => {
         try {

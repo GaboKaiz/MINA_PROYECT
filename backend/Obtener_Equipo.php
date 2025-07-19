@@ -1,12 +1,22 @@
 <?php
+ob_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: http://localhost");
-header("Access-Control-Allow-Methods: GET");
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Credentials: true");
 header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 
-require_once '../API/Conexion.php';
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit();
+}
+
+require_once(__DIR__ . '/Conexion.php');
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -20,6 +30,7 @@ try {
     $db = new Conexion();
     $conn = $db->conectar();
     $user_id = $_SESSION['user_id'];
+
     $stmt = $conn->prepare("SELECT id_equipo, descripcion, codigo_equipo, fecha_instalacion FROM equipo WHERE id_usuario = ?");
     $stmt->execute([$user_id]);
 
@@ -30,4 +41,3 @@ try {
     http_response_code(400);
     echo json_encode(["estado" => "error", "mensaje" => $e->getMessage()]);
 }
-?>

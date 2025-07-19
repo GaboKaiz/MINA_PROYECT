@@ -1,12 +1,20 @@
 <?php
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: http://localhost");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: Content-Type");
-header("X-Content-Type-Options: nosniff");
-header("X-Frame-Options: DENY");
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-require_once '../API/Conexion.php';
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Credentials: true");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit();
+}
+
+require_once(__DIR__ . '/Conexion.php');
+
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -14,12 +22,13 @@ if (session_status() === PHP_SESSION_NONE) {
 
 try {
     if (!isset($_SESSION['user_id'])) {
+        http_response_code(401);
         throw new Exception("No se ha iniciado sesión");
     }
 
     $data = json_decode(file_get_contents("php://input"), true);
 
-    if (!isset($data['descripcion']) || !isset($data['codigo_equipo']) || !isset($data['fecha_instalacion'])) {
+    if (!isset($data['descripcion'], $data['codigo_equipo'], $data['fecha_instalacion'])) {
         throw new Exception("Faltan datos requeridos");
     }
 
@@ -31,7 +40,8 @@ try {
     if (empty($descripcion) || empty($codigo_equipo) || empty($fecha_instalacion)) {
         throw new Exception("Todos los campos son obligatorios");
     }
-    if (!preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/", $fecha_instalacion)) {
+
+    if (!preg_match("/^\d{4}-\d{2}-\d{2}$/", $fecha_instalacion)) {
         throw new Exception("Formato de fecha inválido (debe ser YYYY-MM-DD)");
     }
 

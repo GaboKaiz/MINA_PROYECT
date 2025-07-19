@@ -1,12 +1,23 @@
 <?php
+ob_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: http://localhost");
-header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Credentials: true");
 header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 
-require_once '../API/Conexion.php';
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit();
+}
+
+require_once(__DIR__ . '/Conexion.php');
+
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -41,18 +52,18 @@ try {
     $db = new Conexion();
     $conn = $db->conectar();
 
-    // Check if email is taken by another user
+    // Verifica si el correo ya lo tiene otro usuario
     $stmt = $conn->prepare("SELECT id FROM usuarios WHERE correo = ? AND id != ?");
     $stmt->execute([$correo, $user_id]);
     if ($stmt->rowCount() > 0) {
         throw new Exception("El correo ya está registrado por otro usuario");
     }
 
-    // Update user data
+    // Actualiza los datos
     $stmt = $conn->prepare("UPDATE usuarios SET nombre = ?, correo = ?, password = ? WHERE id = ?");
     $stmt->execute([$nombre, $correo, $password, $user_id]);
 
-    // Update session data
+    // Actualiza la sesión
     $_SESSION['user_name'] = $nombre;
     $_SESSION['user_email'] = $correo;
 
